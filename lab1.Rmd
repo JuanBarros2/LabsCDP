@@ -1,0 +1,109 @@
+---
+title: "Laboratório 1 - Análise de Gastos de Deputados"
+author: "Juan Barros"
+date: "29 de agosto de 2018"
+output: github_document
+---
+
+```{r}
+library(tidyverse)
+library(knitr)
+dados <- read_csv("dadosCEAP.csv")
+```
+## Quais são os deputados que gastaram mais dinheiro da CEAP? Quais são os mais econômicos
+
+```{r questaoUm}
+group <- 
+  dados %>%
+  group_by(nomeParlamentar) %>%
+  summarise(gasto = sum(valorLíquido))
+first <- 
+  group %>%
+  arrange(desc(gasto)) %>%
+  slice(1:10)
+last <-
+  group %>%
+  arrange(gasto) %>%
+  slice(1:10)
+  
+knitr::kable(last, caption = "Economicos")
+```
+
+## Quais os estados cujos deputados gastam mais no exterior? Quais os estados cujos deputados gastam menos no exterior? 
+```{r questaoDois}
+group <- 
+  dados %>%
+  filter(tipoDocumento == 2) %>% 
+  group_by(sgUF) %>%
+  summarise(gasto = sum(valorLíquido))
+first <- 
+  group %>%
+  arrange(desc(gasto)) %>%
+  slice(1:10)
+last <-
+  group %>%
+  arrange(gasto) %>%
+  slice(1:10)
+
+```
+
+Quais os partidos cujos parlamentares mais usam CEAP no estado da Paraíba? Quais são os que menos usam? Mesmas perguntas considerando valores em R$. (7,5 pts)
+```{r questaoTres}
+group <- 
+  dados %>%
+  filter(sgUF == "PB") %>% 
+  group_by(sgPartido) %>%
+  summarise(gasto = sum(valorLíquido)) 
+first <- 
+  group %>%
+  arrange(desc(gasto)) %>%
+  slice(1:5)
+last <-
+  group %>%
+  arrange(gasto) %>%
+  slice(1:5)
+
+```
+
+## Quais os deputados que mais ultrapassam o limite de CEAP do seu estado? Os dados com os limites de CEAP por estado estão disponíveis neste link. (7,5 pts)
+```{r questaoQuatro}
+limite <- read_csv("limiteMensalCEAP.csv") %>% 
+  spread(UF, limite_mensal)
+
+group <- 
+  dados %>%
+  filter(!is.na(dataEmissao) & !is.na(sgUF)) %>% 
+  mutate(dataEmissao =   format(as.POSIXct(dataEmissao),"%Y-%m")) %>% 
+  
+  group_by(dataEmissao, nomeParlamentar, idCadastro, sgUF) %>%
+  summarise(gasto = sum(valorLíquido)) %>% 
+  filter(gasto >= limite[sgUF]) %>% 
+  group_by(idCadastro, nomeParlamentar, sgUF) %>% 
+  summarise(quantidade = n()) %>% 
+  arrange(desc(quantidade))
+group <- group[!duplicated(group$sgUF), ]
+  
+
+```
+
+## Quais estados cujos parlamentares gastam mais com passagens aéreas? (7,5 pts)
+```{r questaoCinco}
+group <- 
+  dados %>%
+  filter(tipoDespesa == "Emissão Bilhete Aéreo") %>% 
+  group_by(sgUF) %>%
+  summarise(gasto = sum(valorLíquido))
+
+```
+
+## Escolha três partidos e responda: Quais são os tipos de despesa mais utilizados no uso da CEAP pelos deputados desses partidos? Mesma pergunta considerando valores em R$. 
+```{r questaoSeis, echo=FALSE}
+partidos <- c("PT", "PSDB", "PMDB")
+
+group <- 
+  dados %>%
+  filter(sgPartido %in% partidos) %>% 
+  group_by(sgPartido, tipoDespesa) %>% 
+  summarise(gasto = sum(valorLíquido)) %>% 
+  spread(tipoDespesa, gasto)
+```
