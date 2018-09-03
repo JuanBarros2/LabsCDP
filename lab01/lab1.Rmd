@@ -7,27 +7,32 @@ output: html_document
 
 ```{r, echo=FALSE}
 library(tidyverse)
-library(knitr)
+library(plotly)
 dados <- read_csv("dadosCEAP.csv")
 ```
 ## Quais são os deputados que gastaram mais dinheiro da CEAP? Quais são os mais econômicos
 
+
 ```{r questaoUm}
-group <- 
+gastosDeputados <- 
   dados %>%
-  filter(!is.na(idCadastro)) %>% 
+  filter(!is.na(idCadastro) & valorLíquido >= 0) %>% 
   group_by(nomeParlamentar) %>%
   summarise(gasto = sum(valorLíquido))
-gastadores <- 
-  group %>%
+deputadosGastadores <- 
+  gastosDeputados %>%
   arrange(desc(gasto)) %>%
   slice(1:10)
-economicos <-
-  group %>%
+deputadosEconomicos <-
+  gastosDeputados %>%
   arrange(gasto) %>%
   slice(1:10)
-  
-knitr::kable(last, caption = "Economicos")
+
+plot_ly(deputadosGastadores, y =~ gasto, x =~ reorder(nomeParlamentar, gasto), marker = list(color = "#99d8c9")) %>%
+        layout(title = "Deputados que mais gastaram", yaxis = list(title = "R$"), xaxis = list(title ="", tickangle = -90))
+
+plot_ly(deputadosEconomicos, y =~ gasto, x =~ reorder(nomeParlamentar, gasto), marker = list(color = "#99d8c9")) %>%
+        layout(title = "Deputados que menos gastaram", yaxis = list(title = "R$"), xaxis = list(title ="", tickangle = -90))
 ```
 
 ## Quais os estados cujos deputados gastam mais no exterior? Quais os estados cujos deputados gastam menos no exterior? 
@@ -45,10 +50,12 @@ last <-
   group %>%
   arrange(gasto) %>%
   slice(1:10)
+last
 
 ```
 
 Quais os partidos cujos parlamentares mais usam CEAP no estado da Paraíba? Quais são os que menos usam? Mesmas perguntas considerando valores em R$. (7,5 pts)
+
 ```{r questaoTres}
 group <- 
   dados %>%
