@@ -5,7 +5,7 @@ date: "29 de agosto de 2018"
 output: html_document
 ---
 
-```{r}
+```{r, echo=FALSE}
 library(tidyverse)
 library(knitr)
 dados <- read_csv("dadosCEAP.csv")
@@ -15,13 +15,14 @@ dados <- read_csv("dadosCEAP.csv")
 ```{r questaoUm}
 group <- 
   dados %>%
+  filter(!is.na(idCadastro)) %>% 
   group_by(nomeParlamentar) %>%
   summarise(gasto = sum(valorLíquido))
-first <- 
+gastadores <- 
   group %>%
   arrange(desc(gasto)) %>%
   slice(1:10)
-last <-
+economicos <-
   group %>%
   arrange(gasto) %>%
   slice(1:10)
@@ -97,7 +98,7 @@ group <-
 ```
 
 ## Escolha três partidos e responda: Quais são os tipos de despesa mais utilizados no uso da CEAP pelos deputados desses partidos? Mesma pergunta considerando valores em R$. 
-```{r questaoSeis, echo=FALSE}
+```{r questaoSeis}
 partidos <- c("PT", "PSDB", "PMDB")
 
 group <- 
