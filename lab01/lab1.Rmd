@@ -2,7 +2,7 @@
 title: "Laboratório 1 - Análise de Gastos de Deputados"
 author: "Juan Barros"
 date: "29 de agosto de 2018"
-output: github_document
+output: html_document
 ---
 
 ```{r}
