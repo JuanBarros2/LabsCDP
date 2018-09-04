@@ -42,48 +42,80 @@ plot_ly(deputadosEconomicos, y =~ gasto, x =~ reorder(nomeParlamentar, gasto), m
 ```
 
 ## Quais os estados cujos deputados gastam mais no exterior? Quais os estados cujos deputados gastam menos no exterior? 
+A questão é semelhante a anterior, só que o foco agora é filtrar os documentos
+que remetam ao uso do auxílio no exterior. Para fazer isso basta filtrar
+os resultados que tenham 2 no campo tipoDocumento e agrupar o resultado por meses.
+Depois ordenamos os valores e selecionamos apenas os maiores e menores.
 ```{r questaoDois}
-gastosEstados <- 
+gastosExterior <- 
   dados %>%
-  filter(tipoDocumento == 2 & valorLíquido >= 0) %>% 
+  filter(tipoDocumento == 2 & valorLíquido >= 0 & !is.na(idCadastro)) 
+gastosUFTotais <-
+  gastosExterior %>% 
   group_by(sgUF) %>%
   summarise(gasto = sum(valorLíquido))
 maisGastos <- 
-  group %>%
+  gastosUFTotais %>%
   arrange(desc(gasto)) %>%
   slice(1:10)
 menosGastos <-
-  group %>%
+  gastosUFTotais %>%
   arrange(gasto) %>%
   slice(1:10)
 
+plot_ly(maisGastos, y =~ gasto, x =~ reorder(sgUF, gasto), marker = list(color = "#99d8c9")) %>%
+        layout(title = "Estados que mais gastaram no exterior", yaxis = list(title = "R$"), xaxis = list(title ="", tickangle = -90))
+
+plot_ly(menosGastos, y =~ gasto, x =~ reorder(sgUF, gasto), marker = list(color = "#99d8c9")) %>%
+        layout(title = "Estados que menos gastaram", yaxis = list(title = "R$"), xaxis = list(title ="", tickangle = -90))
+
+
 ```
 
-Quais os partidos cujos parlamentares mais usam CEAP no estado da Paraíba? Quais são os que menos usam? Mesmas perguntas considerando valores em R$. (7,5 pts)
+## Quais os partidos cujos parlamentares mais usam CEAP no estado da Paraíba? Quais são os que menos usam? Mesmas perguntas considerando valores em R$. (7,5 pts)
 
+Nessa atividade, foi preciso filtrar os dados da Paraíba e depois agrupar os partidos.
+Em seguida, foi feito uma soma dos valores dos montantes líquidos e a soma
+da quantidade de registros feitos pelos partidos. Dessa forma, podemos elencar os
+partidos mais e menos economicos. O gráfico abaixo representa o somatório dos gastos
+em reais e em quantidade absoluta, horizontalmente e verticalmente, respectivamente.
 ```{r questaoTres}
-group <- 
+partidosGastos <- 
   dados %>%
   filter(sgUF == "PB") %>% 
   group_by(sgPartido) %>%
-  summarise(gasto = sum(valorLíquido)) 
-first <- 
-  group %>%
+  summarise(gasto = sum(valorLíquido), quantidade = n()) 
+
+partidosPBGastadores <- 
+  partidosGastos %>%
   arrange(desc(gasto)) %>%
   slice(1:5)
-last <-
-  group %>%
+partidosPBEconomizadores <-
+  partidosGastos %>%
   arrange(gasto) %>%
   slice(1:5)
+
+plot_ly(data = partidosGastos, x = ~gasto, y = ~quantidade, text = ~paste("Partido: ", sgPartido)) %>%
+        layout(title = "Gasto de deputados (por estado) no exterior", yaxis = list(title = "Quantidade de Auxílios Utilizados"), xaxis = list(title ="Montante em R$"))
 
 ```
 
 ## Quais os deputados que mais ultrapassam o limite de CEAP do seu estado? Os dados com os limites de CEAP por estado estão disponíveis neste link. (7,5 pts)
+
+Essa foi a atividade mais difícil a ser resolvida. Inicialmente converti as datas para o formato mês-ano
+para que conseguisse extrair o gasto mensal. Posteriormente, agrupei os estados, meses e parlamentares 
+para que fosse feito a soma de quanto cada parlamentar gastou em cada mês.
+Depois comparei o resultado de cada mês com o limite mensal que foi importado e convertido para outro
+formato para facilitar a comparação. Nessa conversão, troquei os valores de UF por valores de coluna 
+de forma a ter uma espécie de dicionário com chaves (siglas das UFs) e valores (limite mensal).
+Extraindo os depultados que extrapolaram o limite mensal, contabilizei a quantidade de vezes que 
+foi extrapolado e ordenei os que mais ultrapassaram o limite. Por fim, removi os resultados
+repetidos de cada estado, sobrando assim apenas o mais extrapolador.
 ```{r questaoQuatro}
 limite <- read_csv("limiteMensalCEAP.csv") %>% 
   spread(UF, limite_mensal)
 
-group <- 
+gastosDeputadosMensais <- 
   dados %>%
   filter(!is.na(dataEmissao) & !is.na(sgUF)) %>% 
   mutate(dataEmissao =   format(as.POSIXct(dataEmissao),"%Y-%m")) %>% 
@@ -91,32 +123,70 @@ group <-
   group_by(dataEmissao, nomeParlamentar, idCadastro, sgUF) %>%
   summarise(gasto = sum(valorLíquido)) %>% 
   filter(gasto >= limite[sgUF]) %>% 
-  group_by(idCadastro, nomeParlamentar, sgUF) %>% 
-  summarise(quantidade = n()) %>% 
+  group_by(nomeParlamentar, sgUF) %>% 
+  summarise(quantidade = n(), gasto = sum(gasto)) %>% 
   arrange(desc(quantidade))
-group <- group[!duplicated(group$sgUF), ]
+gastosDeputadosMensais <- gastosDeputadosMensais[!duplicated(gastosDeputadosMensais$sgUF), ]
+
+plot_ly(gastosDeputadosMensais, x = ~gasto, y = ~quantidade, text = ~paste("Parlamentar: ", nomeParlamentar, "<br>Estado:", sgUF)) %>%
+        layout(title = "Deputados que mais extrapolaram o teto do seu estado", yaxis = list(title = "Quantidade de Auxílios Utilizados"), xaxis = list(title ="Montante em R$"))
   
 
 ```
 
 ## Quais estados cujos parlamentares gastam mais com passagens aéreas? (7,5 pts)
+
+Primeiro filtrei as despesas com emissão de bilhete aéreo, depois agrupei com os 
+estados. Por fim, realizei uma soma dos valores líquidos dos gastos para obter
+o resultado.
 ```{r questaoCinco}
-group <- 
+estadosPassagens <- 
   dados %>%
   filter(tipoDespesa == "Emissão Bilhete Aéreo") %>% 
   group_by(sgUF) %>%
   summarise(gasto = sum(valorLíquido))
 
+plot_ly(estadosPassagens, y =~ gasto, x =~ reorder(sgUF, gasto), marker = list(color = "#99d8c9")) %>%
+        layout(title = "Estados que mais gastaram com passagens aéreas", yaxis = list(title = "R$"), xaxis = list(title ="Estados", tickangle = -90))
+
 ```
 
 ## Escolha três partidos e responda: Quais são os tipos de despesa mais utilizados no uso da CEAP pelos deputados desses partidos? Mesma pergunta considerando valores em R$. 
+Escolhi os partidos PT, PSDB e PMDB. Realizei o filtro nos dados para eliminar
+os outros partidos. Em seguida, agrupei os valores dos partidos realizando
+a sumarização com a soma dos gastos e a quantidade em cada tipo de despesa.
+Para finalizar, dividi os resultados por quantidade e por montante e criei
+o gráfico abaixo com o resultado obtido do montante de cada partido.
 ```{r questaoSeis}
 partidos <- c("PT", "PSDB", "PMDB")
 
-group <- 
+partidosDespesas <- 
   dados %>%
   filter(sgPartido %in% partidos) %>% 
   group_by(sgPartido, tipoDespesa) %>% 
-  summarise(gasto = sum(valorLíquido)) %>% 
-  spread(tipoDespesa, gasto)
+  summarise(gasto = sum(valorLíquido), quantidade = n()) %>% 
+  group_by(sgPartido, tipoDespesa) %>% 
+  summarise(gasto = sum(gasto), quantidade = sum(quantidade))
+
+# Nesse resultado estamos levando em consideração apenas a quantidade de auxílios registrados
+partidosPorQuantidade <-
+  partidosDespesas %>% 
+  arrange(desc(quantidade))
+partidosPorQuantidade <- partidosPorQuantidade[!duplicated(partidosPorQuantidade$sgPartido), ]
+  
+# Nesse resultado estamos levando em consideração apenas a soma
+partidosPorMontante <-
+  partidosDespesas %>% 
+  arrange(desc(gasto))
+partidosPorMontante <- partidosPorMontante[!duplicated(partidosPorMontante$sgPartido), ]
+
+# Para o gráfico, usarei apenas o montante
+graficoDado <-
+  partidosPorMontante %>% 
+  spread(sgPartido, gasto)
+
+plot_ly(graficoDado, x = ~tipoDespesa, y = ~PMDB, type = 'bar', name = 'PMDB') %>%
+  add_trace(y = ~PSDB, name = 'PSDB') %>%
+  add_trace(y = ~PT, name = 'PT') %>%
+  layout(yaxis = list(title = 'Quantidade em Reais'), xaxis = list(title = 'Tipo de Despesa'), barmode = 'group')
 ```
