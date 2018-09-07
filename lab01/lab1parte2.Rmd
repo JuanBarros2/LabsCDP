@@ -1,0 +1,71 @@
+---
+title: "Análise de Gastos de Deputados"
+author: "Juan Barros"
+date: "6 de setembro de 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(streamgraph)
+dadosCEAP <- read_csv("dadosCEAP.csv")
+
+```
+
+# Análise de Gastos de Deputados
+
+## Continuação...
+
+Ao responder as perguntas do lab 1 fiquei curioso com uma questão: os gastos ao passar do tempo. A maior parte
+das perguntas envolviam respostas objetivas e, em geral, eram gerais em termos temporais. Fiquei curioso em como
+se dá o gasto dos parlamentares ao decorrer do tempo, se eles crescem, se reduzem, se sofrem incluencia em determinadas
+épocas... Pensando nisso, resolvi responder a seguinte pergunta: como se comportam os gastos dos parlamentares no Brasil?
+Tendo em vista que dispor todos os deputados em uma visualização teria prejuízo à leitura, resolvi agrupar os resultados
+por partidos escolhendo os mais gastadores em questão de valor líquido registrado no CEAP.
+
+Inicialmente, realizei o filtro e agrupei os gastos por partidos como mostra o código abaixo:
+
+```{r partidoGastos}
+dadosLimpos <-
+  dadosCEAP %>%
+  filter(!is.na(idCadastro) & valorLíquido >= 0)
+
+partidoGastos <- 
+  dadosLimpos %>% 
+  group_by(sgPartido) %>% 
+  summarise(gasto = sum(valorLíquido)) %>% 
+  arrange(desc(gasto)) %>% 
+  head(5)
+```
+
+Primeiro realizo o filtro para descartar gastos que não sejam de parlamentares e ressarcimentos. 
+Em seguida, agrupo os partidos e realizo a soma dos gastos (valor Líquido) com o comando summarise. 
+Por fim, utilizo a função arrange para ordenar decrescentemente os gastos e a função head para extrair
+os n(5) valores mais altos da minha tabela.
+
+Para continuar com a análise, precisarei refiltrar levando em consideração apenas os valores que
+tiverem como partido, um dos 5 maiores gastadores. Para isso, reutilizarei os valores limpos
+da filtragem anterior e criarei uma lista com os valores dos nomes dos partidos obtidos previamente.
+
+```{r }
+topGastosPartido <- partidoGastos$sgPartido
+
+gastosPartidos <-
+  dadosLimpos %>%
+  filter(sgPartido %in% topGastosPartido & !is.na(dataEmissao)) %>% 
+  mutate(dataEmissao = format(as.POSIXct(dataEmissao),"%Y-%m-01")) %>% 
+  group_by(sgPartido, dataEmissao) %>% 
+  summarise(gasto = median(valorLíquido))
+
+streamgraph(gastosPartidos, "sgPartido", "gasto", "dataEmissao", interactive=TRUE ) %>% 
+  sg_axis_x(0.5, "dataEmissao", "%m/%Y") %>%
+  sg_legend(show=TRUE, label="Partidos: ")
+  
+  ```
+
+Para isso, realizei a filtragem 
+## Para esse laboratório, utilizei...
+
+[.] streamgraph
+[.] tidyverse
+
