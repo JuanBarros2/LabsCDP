@@ -40,7 +40,7 @@ partidoGastos <-
 
 Primeiro realizo o filtro para descartar gastos que não sejam de parlamentares e ressarcimentos. 
 Em seguida, agrupo os partidos e realizo a soma dos gastos (valor Líquido) com o comando summarise. 
-Por fim, utilizo a função arrange para ordenar decrescentemente os gastos e a função head para extrair
+Por fim, utilizo a função *arrange* para ordenar decrescentemente os gastos e a função *head* para extrair
 os n(5) valores mais altos da minha tabela.
 
 Para continuar com a análise, precisarei refiltrar levando em consideração apenas os valores que
@@ -55,17 +55,65 @@ gastosPartidos <-
   filter(sgPartido %in% topGastosPartido & !is.na(dataEmissao)) %>% 
   mutate(dataEmissao = format(as.POSIXct(dataEmissao),"%Y-%m-01")) %>% 
   group_by(sgPartido, dataEmissao) %>% 
-  summarise(gasto = median(valorLíquido))
+  summarise(media = mean(valorLíquido))
 
-streamgraph(gastosPartidos, "sgPartido", "gasto", "dataEmissao", interactive=TRUE ) %>% 
-  sg_axis_x(0.5, "dataEmissao", "%m/%Y") %>%
+streamgraph(gastosPartidos, "sgPartido", "media", "dataEmissao", interactive=TRUE, offset="zero" ) %>% 
+  sg_axis_x(1, "dataEmissao", "%m/%Y") %>%
   sg_legend(show=TRUE, label="Partidos: ")
-  
-  ```
 
-Para isso, realizei a filtragem 
+  
+```
+
+Para isso, realizei a filtragem dos partidos com o comando *%in%* e removi as linhas que não
+uma data de emissão registrada. Em seguida, formatei os dados para terem apenas ano e mês,
+contudo a biblioteca de visualização que utilizei não aceitava o formato e por isso tive que
+definir o dia 01 para todos os valores, contornando o problema. Depois realizei o agrupamento
+levando em consideração a média. Para realizar a construção do gráfico, chamo a função
+streamgraph  passando os valores ccomo parâmetro.
+Pela visualização, é possível ver que o PT, em ano de eleição, teve um gasto incomum, comparado
+aos outros partidos. Também é possível verificar que sempre no início do ano, a média de gastos
+nos cinco partidos sofre uma elevação considerável.
+
+## Finalizando...
+
+Por fim, gostaria de saber também como vai a dispersão dos gastos dos partidos em relação aos seus 
+fornecedores, ou seja, quero ter uma noção mais clara se os partidos gastam muito com certos fornecedores
+e pouco com outros. Para isso, utilizarei o gráfico em boxplot para tentar encontrar outliers nos dados.
+Para realizar essa atividade, é preciso verificar que a coluna *fornecedor* contém valores maiúsculos
+e minúsculos, o que pode interferir no agrupamento. Por isso, adicionarei um *mutate* para deixar
+todos os campos com valores em *uppercase* e um filtro, eliminando as linhas que não tiverem fornecedor
+declarado:
+```{r }
+dadosLimpos <- 
+  dadosLimpos %>%
+  filter(!is.na(fornecedor)) %>% 
+  mutate(fornecedor = toupper(fornecedor))
+```
+
+Em seguida, agrupei os valores líquidos gastos com cada fornecedor. Para criar o gráfico, utilizei
+o ggplot com a formatação de *boxplot*. 
+
+```{r }
+fornecedoresPartidos <- 
+  dadosLimpos %>%
+  group_by(sgPartido, fornecedor) %>% 
+  summarise(gasto = sum(valorLíquido))
+
+ggplot(fornecedoresPartidos, aes(x=sgPartido, y=gasto)) +
+  geom_boxplot() +
+  labs(title = "Boxplot de gastos com fornecedores\n", y = "Gastos com fornecedores [R$]", x = "Partidos políticos") +
+  theme(axis.text.x = element_text(angle=90))
+
+```
+
+Através do gráfico, fica trivial entender que a maior parte dos gastos com fornecedores
+segue um valor baixo de gasto de média. Em geral, todos seguem uma média e mediana muito
+próxima (se comparado com os outliers). Também é possível notar que alguns partidos apresentam
+outliers gritantes em relação aos outros e que são justamente os partidos citados acima
+como os mais gastadores. 
+
 ## Para esse laboratório, utilizei...
 
-[.] streamgraph
-[.] tidyverse
+* [streamgraph](https://github.com/hrbrmstr/streamgraph)
+* [tidyverse](https://www.tidyverse.org/)
 
