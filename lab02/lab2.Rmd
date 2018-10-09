@@ -43,7 +43,42 @@ desse modelo cai e consegue representar menos casos que o anterior.
 ### 2- Compare as regressões construídas para 2006 e 2010. Quais as diferenças/semelhanças percebidas? Algumas sugestões:
 
 #### a- Analise os plots de resíduos e verifique se há tendências nos erros para cada ano.
+```{r}
+require(ggplot2)
+p1 = ggplot(regressaoTotal2006, aes(.fitted, .resid)) +
+    geom_point()
+p1 = p1 + geom_hline(yintercept=0, col="red", linetype="dashed")
+p1 = p1 + xlab("Valores ajustados") + ylab("Resíduos")
+p1 = p1 + ggtitle("Gráfico de Resíduos vs Ajustamento - 2006") + 
+    theme_bw()
+p1
+
+```
+Com o gráfico acima, fica claro perceber que os erros não estão distribuidos uniformemente, tendo
+regiões que aglomeram uma quantidade muito alta de pontos. Além disso, a olho nú é possível notar
+um pequeno padrão na área inferior ao 0 que respeita a forma de uma reta. Isso pode ter acontecido
+pois os parâmetros passados tenham ligação entre si.
+
+```{r}
+p1 = ggplot(regressaoTotal2010, aes(.fitted, .resid)) +
+    geom_point()
+p1 = p1 + geom_hline(yintercept=0, col="red", linetype="dashed")
+p1 = p1 + xlab("Valores ajustados") + ylab("Resíduos")
+p1 = p1 + ggtitle("Gráfico de Resíduos vs Ajustamento - 2010") + 
+    theme_bw()
+p1
+
+```
+Em 2010, é possível notar que em geral os pontos são localizados no início, não obedecendo a aleatoriedade
+esperada em um bom modelo de regressão, além de não parecer simétrica a uma avaliação rápida.
+
+Dessa forma, podemos afirmar que os dois modelos apresentam dispersão de resíduos parecidas,
+contudo, não recomendadas para modelos representativos de regressão linear.
+
 #### b- Quais variáveis conseguem explicar melhor o número de votos? Compare essas variáveis entre os modelos. Mesma coisa para as variáveis menos explicativas.
+No modelo de 2006, as variáveis que mais explicam o modelo, tendo em vista o sumário gerado na questão 1, são:
+Total de despesas, Média da receita e os recursos próprios. Já em 2010, as variáveis são: total de despesa e média da receita.
+
 #### c- Compare os valores de R2 e RSE considerando as regressões para cada ano.
 #### d- Inclua outros pontos de comparação que você ache interessante.
 
