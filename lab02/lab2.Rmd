@@ -6,29 +6,48 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-library(dplyr)
+library(tidyverse)
+dados2006 <- read_csv("eleicoes_2006.csv")
+dados2010 <- read_csv("eleicoes_2010.csv")
+```
+
+### 1- Um modelo de regressão múltipla com todas as variáveis é plausível para explicar a variação em y (número de votos) em 2006? Mesma pergunta para 2010. 
+
+Não. Os dados contidos nessas bases de dados não são totalmente quantitativos, é possível encontrar dados que representam categorias e devem se utilizar de outras estratégias de análise. Desconsiderando esses dados, temos os seguintes modelos:
+
+```{r}
+regressaoTotal2006 <- lm(votos ~ media_despesa + total_despesa + quantidade_fornecedores + quantidade_despesas + recursos_de_partido_politico + recursos_proprios + recursos_de_pessoas_juridicas + recursos_de_pessoas_fisicas + recursos_de_outros_candidatos.comites + media_receita + total_receita + quantidade_doadores + quantidade_doacoes, dados2006)
+
+regressaoTotal2010 <- lm(votos ~ media_despesa + total_despesa + quantidade_fornecedores + quantidade_despesas + recursos_de_partido_politico + recursos_proprios + recursos_de_pessoas_juridicas + recursos_de_pessoas_fisicas + recursos_de_outros_candidatos.comites + media_receita + total_receita + quantidade_doadores + quantidade_doacoes, dados2010)
 
 ```
 
-### Um modelo de regressão múltipla com todas as variáveis é plausível para explicar a variação em y (número de votos) em 2006? Mesma pergunta para 2010. 
-
-### Compare as regressões construídas para 2006 e 2010. Quais as diferenças/semelhanças percebidas? Algumas sugestões:
-
-#### Analise os plots de resíduos e verifique se há tendências nos erros para cada ano.
-#### Quais variáveis conseguem explicar melhor o número de votos? Compare essas variáveis entre os modelos. Mesma coisa para as variáveis menos explicativas.
-#### Compare os valores de R2 e RSE considerando as regressões para cada ano.
-#### Inclua outros pontos de comparação que você ache interessante.
-
-### Todas as variáveis são úteis para os modelos de regressão? Há variáveis redudantes? Faça análises para 2006 e 2010 separadamente. 
-### No caso de haver variáveis pouco explicativas e/ou redudantes, construa um novo modelo sem essas variáveis e o compare ao modelo com todas as variáveis (e.g. em termos de R2 e RSE). Faça isso para 2006 e 2010 separadamente. 
-
-### Construa agora uma regressão considerando os anos 2006 e 2010 em conjunto. Que diferenças/semelhanças você percebe em relação aos modelos individuais por ano? Veja a questão 2 para sugestões que você usar para comparação.
-
-```{r cars}
-summary(cars)
+No modelo de 2006, temos os seguintes valores obtidos:
+```{r}
+summary(regressaoTotal2006)
 ```
+Podemos verificar que a maior parte dos parâmetros considerados para a geração do modelo
+tem um p-valor baixo, tendo um bom nível descritivo. Contudo, a medida de qualidade de ajuste
+do modelo (Multiple R-Squared), indica uma alta quantidade na soma dos resíduos 
+amostrais, podendo concluir que o modelo contém muitos pontos não representados pelo modelo
+assertivamente.
 
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+Em relação ao ano de 2010, temos o seguinte resultado:
+```{r}
+summary(regressaoTotal2010)
 ```
+No segundo caso, o modelo tem o seu p-valor elevado em quase todos os parâmetros.
+Isso, por si só, já nos indica que esse modelo é problemático. Por fim, o R-Quadrado
+desse modelo cai e consegue representar menos casos que o anterior.
+
+### 2- Compare as regressões construídas para 2006 e 2010. Quais as diferenças/semelhanças percebidas? Algumas sugestões:
+
+#### a- Analise os plots de resíduos e verifique se há tendências nos erros para cada ano.
+#### b- Quais variáveis conseguem explicar melhor o número de votos? Compare essas variáveis entre os modelos. Mesma coisa para as variáveis menos explicativas.
+#### c- Compare os valores de R2 e RSE considerando as regressões para cada ano.
+#### d- Inclua outros pontos de comparação que você ache interessante.
+
+### 3- Todas as variáveis são úteis para os modelos de regressão? Há variáveis redudantes? Faça análises para 2006 e 2010 separadamente. 
+### 4- No caso de haver variáveis pouco explicativas e/ou redudantes, construa um novo modelo sem essas variáveis e o compare ao modelo com todas as variáveis (e.g. em termos de R2 e RSE). Faça isso para 2006 e 2010 separadamente. 
+
+### 5- Construa agora uma regressão considerando os anos 2006 e 2010 em conjunto. Que diferenças/semelhanças você percebe em relação aos modelos individuais por ano? Veja a questão 2 para sugestões que você usar para comparação.
