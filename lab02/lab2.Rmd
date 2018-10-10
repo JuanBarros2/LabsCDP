@@ -1,3 +1,4 @@
+
 ---
 title: "Usando Regressão Linear para Explicar a votação de Deputados"
 author: "Juan Barros"
@@ -9,6 +10,27 @@ output: html_document
 library(tidyverse)
 dados2006 <- read_csv("eleicoes_2006.csv")
 dados2010 <- read_csv("eleicoes_2010.csv")
+dados20062010 <- read_csv(
+  here::here('eleicoes_2006_e_2010.csv'), 
+  local=readr::locale("br"),
+  col_types = cols(
+    ano = col_integer(),
+    sequencial_candidato = col_character(),
+    quantidade_doacoes = col_integer(),
+    quantidade_doadores = col_integer(),
+    total_receita = col_double(),
+    media_receita = col_double(),
+    recursos_de_outros_candidatos.comites = col_double(),
+    recursos_de_pessoas_fisicas = col_double(),
+    recursos_de_pessoas_juridicas = col_double(),
+    recursos_proprios = col_double(),
+    `recursos_de_partido_politico` = col_double(),
+    quantidade_despesas = col_integer(),
+    quantidade_fornecedores = col_integer(),
+    total_despesa = col_double(),
+    media_despesa = col_double(),
+    votos = col_integer(),
+    .default = col_character()))
 ```
 
 ### 1- Um modelo de regressão múltipla com todas as variáveis é plausível para explicar a variação em y (número de votos) em 2006? Mesma pergunta para 2010. 
@@ -29,7 +51,7 @@ summary(regressaoTotal2006)
 Podemos verificar que a maior parte dos parâmetros considerados para a geração do modelo
 tem um p-valor baixo, tendo um bom nível descritivo. Contudo, a medida de qualidade de ajuste
 do modelo (Multiple R-Squared), indica uma alta quantidade na soma dos resíduos 
-amostrais, podendo concluir que o modelo contém muitos pontos não representados pelo modelo
+amostrais, podendo concluir que o modelo contém muitos pontos não representados por ele,
 assertivamente.
 
 Em relação ao ano de 2010, temos o seguinte resultado:
@@ -42,7 +64,7 @@ desse modelo cai e consegue representar menos casos que o anterior.
 
 ### 2- Compare as regressões construídas para 2006 e 2010. Quais as diferenças/semelhanças percebidas? Algumas sugestões:
 
-#### a- Analise os plots de resíduos e verifique se há tendências nos erros para cada ano.
+#### Analise os plots de resíduos e verifique se há tendências nos erros para cada ano.
 ```{r}
 require(ggplot2)
 p1 = ggplot(regressaoTotal2006, aes(.fitted, .resid)) +
@@ -75,14 +97,37 @@ esperada em um bom modelo de regressão, além de não parecer simétrica a uma 
 Dessa forma, podemos afirmar que os dois modelos apresentam dispersão de resíduos parecidas,
 contudo, não recomendadas para modelos representativos de regressão linear.
 
-#### b- Quais variáveis conseguem explicar melhor o número de votos? Compare essas variáveis entre os modelos. Mesma coisa para as variáveis menos explicativas.
-No modelo de 2006, as variáveis que mais explicam o modelo, tendo em vista o sumário gerado na questão 1, são:
-Total de despesas, Média da receita e os recursos próprios. Já em 2010, as variáveis são: total de despesa e média da receita.
+#### Quais variáveis conseguem explicar melhor o número de votos? Compare essas variáveis entre os modelos. Mesma coisa para as variáveis menos explicativas.
 
-#### c- Compare os valores de R2 e RSE considerando as regressões para cada ano.
-#### d- Inclua outros pontos de comparação que você ache interessante.
+No modelo de 2006, as variáveis que mais explicam o modelo, tendo em vista o sumário gerado na questão 1, são:
+Total de despesas, Média da receita e os recursos próprios. Já em 2010, as variáveis são: total de despesa e média da receita. Para o total de despesas e média de receitas, apresentam valores baixos nas duas, contudo na primeira é bem menor a média das receitas. Os recursos próprios em 2006 ajudavam a explicar os dados, mas em 2010 essa variável teve um baixo nível descritivo.
+
+Já levando em conta as variáveis menos explicativas, temos a quantidade de fornecedores e a quantidade de doações em 2006 e, em 2010, temos a quantidade de despesa e a média de despesa. 
 
 ### 3- Todas as variáveis são úteis para os modelos de regressão? Há variáveis redudantes? Faça análises para 2006 e 2010 separadamente. 
+
+
 ### 4- No caso de haver variáveis pouco explicativas e/ou redudantes, construa um novo modelo sem essas variáveis e o compare ao modelo com todas as variáveis (e.g. em termos de R2 e RSE). Faça isso para 2006 e 2010 separadamente. 
+
+No ano de 2006, podemos retirar as variáveis que tem o p-valor muito alto, ou seja, aqueles valores que não são significativos na nossa regressão.
+Voltando ao sumário da questão um, retiraremos as variáveis "quantidade de fornecedores" e "quantidade de doações". Em 2010, aplicando o mesmo raciocínio, deixaremos apenas as variáveis que tiverem importância para nosso modelo.
+
+```{r}
+novaRegressaoTotal2006 <- lm(votos ~ media_despesa + total_despesa + quantidade_despesas + recursos_de_partido_politico + recursos_proprios + recursos_de_pessoas_juridicas + recursos_de_pessoas_fisicas + recursos_de_outros_candidatos.comites + media_receita + quantidade_doadores, dados2006)
+
+novaRegressaoTotal2010 <- lm(votos ~ total_despesa + quantidade_fornecedores + media_receita, dados2010)
+
+```
+
+Agora teremos os seguintes valores para 2006:
+```{r}
+summary(novaRegressaoTotal2006)
+```
+... e em 2010:
+```{r}
+summary(novaRegressaoTotal2010)
+```
+
+Comparando os antigos valores, é possível notar que em 2006, ao remover as variáveis menos significativas a variável "quantidade de despesa" se torna mais significativa, e é possível notar uma pequena melhora no R Quadrado ajustado, indicando uma maior . Em 2010, a variável "quantidade de fornecedores" se torna mais significativa e o R Quadrado ajustado sobe 2%, ajudando a explicar mais valores desse modelo.
 
 ### 5- Construa agora uma regressão considerando os anos 2006 e 2010 em conjunto. Que diferenças/semelhanças você percebe em relação aos modelos individuais por ano? Veja a questão 2 para sugestões que você usar para comparação.
