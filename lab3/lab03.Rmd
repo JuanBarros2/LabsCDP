@@ -1,0 +1,63 @@
+---
+title: "Predição de Votação de Deputados"
+author: "Juan Barros"
+date: "29 de outubro de 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(caret)
+library(tidyverse)
+```
+
+Para iniciar a predição, é preciso limpar e tratar os dados para se adequarem aos modelos que utilizaremos.
+A seguir, realizo a importação e tratamento dos dados de treino disponível:
+
+```{r inicio, echo=FALSE}
+dadosBrutos <- read_csv("train.csv")
+mediaSequencial <- median(dadosBrutos$sequencial_candidato, na.rm = TRUE) %>% 
+  ceiling()
+dadosLimpos <- dadosBrutos %>% 
+  mutate(sequencial_candidato = 
+           if_else(is.na(sequencial_candidato),
+                   as.numeric(mediaSequencial),
+                   as.numeric(sequencial_candidato))
+         )
+
+```
+
+
+```{r inicio, echo=FALSE}
+
+
+fitControl <- trainControl(## 10-fold CV
+                           method = "repeatedcv",
+                           number = 2,
+                           ## repeated ten times
+                           search = "random",
+                           repeats = 2)
+
+gbmFit1 <- train(votos ~., data = dadosLimpos, 
+                 method = "ridge", 
+                 na.action = na.omit,
+                 trControl = fitControl)
+gbmFit1
+
+```
+
+## A
+
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
