@@ -15,14 +15,9 @@ A seguir, realizo a importação e tratamento dos dados de treino disponível:
 
 ```{r inicio, echo=FALSE}
 dadosBrutos <- read_csv("train.csv")
-mediaSequencial <- median(dadosBrutos$sequencial_candidato, na.rm = TRUE) %>% 
-  ceiling()
+test <- read_csv("test.csv")
 dadosLimpos <- dadosBrutos %>% 
-  mutate(sequencial_candidato = 
-           if_else(is.na(sequencial_candidato),
-                   as.numeric(mediaSequencial),
-                   as.numeric(sequencial_candidato))
-         )
+  select(-sequencial_candidato, -uf, -partido, - estado_civil, -ano)
 
 ```
 
@@ -30,34 +25,17 @@ dadosLimpos <- dadosBrutos %>%
 ```{r inicio, echo=FALSE}
 
 
-fitControl <- trainControl(## 10-fold CV
-                           method = "repeatedcv",
-                           number = 2,
-                           ## repeated ten times
-                           search = "random",
-                           repeats = 2)
-
-gbmFit1 <- train(votos ~., data = dadosLimpos, 
+fitControl <- trainControl(## 1000-fold CV
+                           method = "cv",
+                           number = 100)
+gbmFit1 <- train(votos ~ media_despesa + total_despesa + quantidade_fornecedores + quantidade_despesas + recursos_de_partido_politico + recursos_proprios + recursos_de_pessoas_juridicas + recursos_de_pessoas_fisicas + recursos_de_outros_candidatos.comites + media_receita + total_receita + quantidade_doadores + quantidade_doacoes, data = dadosLimpos, 
                  method = "ridge", 
-                 na.action = na.omit,
+                 tuneGrid = lambdaGrid,
                  trControl = fitControl)
 gbmFit1
+
 
 ```
 
 ## A
-
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
