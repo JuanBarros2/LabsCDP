@@ -13,8 +13,11 @@ output:
 ---
 
 ```{r include=FALSE}
+install.packages("doParallel")
 library(caret)
 library(tidyverse)
+library(doParallel)
+registerDoParallel(makePSOCKcluster(5))
 ```
 
 ```{r importarDados}
