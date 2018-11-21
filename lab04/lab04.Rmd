@@ -1,0 +1,46 @@
+---
+title: ""
+author: "Juan Barros"
+date: "09 de Novembro de 2018"
+output:
+  html_document:
+      df_print: paged
+      toc: yes
+      toc_float: yes
+  html_notebook:
+      toc: yes
+      toc_float: yes
+---
+
+```{r include=FALSE}
+library(caret)
+library(tidyverse)
+```
+
+```{r importarDados}
+dados <- read.csv("train.csv")
+
+validacaoCruzada <- trainControl(method = "cv", number = 5, search = "random", verboseIter = TRUE)
+
+logisticModel <- train(
+  situacao~ uf,
+  data = dados %>% select(-cargo),
+  method = "logicBag",
+  trControl = validacaoCruzada)
+```
+### Questões
+Nessa atividade você irá usar seus conhecimentos sobre classificação para prever quais candidatos à Câmara de Deputados serão eleitos nas eleições de 2014. De forma específica faremos o seguinte:
+
+#### Há desbalanceamento das classes (isto é, uma classe tem muito mais instâncias que outra)? Em que proporção? Quais efeitos colaterais o desbalanceamento de classes pode causar no classificador? Como você poderia tratar isso?
+
+#### Treine: um modelo de regressão logística, uma árvore de decisão e um modelo de adaboost. Tune esses modelos usando validação cruzada e controle overfitting se necessário, considerando as particularidades de cada modelo.  (20 pts.)
+
+#### Reporte acurácia, precision, recall e f-measure no treino e validação. Há uma grande diferença de desempenho no treino/validação? Como você avalia os resultados? Justifique sua resposta. (10 pt.)
+
+#### Interprete as saídas dos modelos. Quais atributos parecem ser mais importantes de acordo com cada modelo? Crie pelo menos um novo atributo que não está nos dados originais e estude o impacto desse atributo (20 pts.)
+
+#### Envie seus melhores modelos à competição do Kaggle. Faça pelo menos uma submissão. Sugestões para melhorar o modelo: (20 pts.)
+
+##### Experimente outros modelos (e.g. SVM, RandomForests e GradientBoosting).
+##### Experimente balancear as classes,  caso estejam desbalanceadas.
+##### Crie pelo menos um novo atributo.
