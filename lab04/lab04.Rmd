@@ -28,7 +28,7 @@ validacaoCruzada <- trainControl(method = "cv", number = 5, search = "random", v
 logisticModel <- train(
   situacao~ uf,
   data = dados %>% select(-cargo),
-  method = "logicBag",
+  method = "regLogistic",
   trControl = validacaoCruzada)
 ```
 ### Questões
