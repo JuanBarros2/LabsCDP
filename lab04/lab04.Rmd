@@ -13,20 +13,17 @@ output:
 ---
 
 ```{r include=FALSE}
-install.packages("doParallel")
 library(caret)
 library(tidyverse)
-library(doParallel)
-registerDoParallel(makePSOCKcluster(5))
 ```
 
 ```{r importarDados}
 dados <- read.csv("train.csv")
 
-validacaoCruzada <- trainControl(method = "cv", number = 5, search = "random", verboseIter = TRUE)
+validacaoCruzada <- trainControl(method = "cv", number = 5, )
 
 logisticModel <- train(
-  situacao~ uf,
+  situacao~ .,
   data = dados %>% select(-cargo),
   method = "regLogistic",
   trControl = validacaoCruzada)
@@ -36,7 +33,40 @@ Nessa atividade você irá usar seus conhecimentos sobre classificação para pr
 
 #### Há desbalanceamento das classes (isto é, uma classe tem muito mais instâncias que outra)? Em que proporção? Quais efeitos colaterais o desbalanceamento de classes pode causar no classificador? Como você poderia tratar isso?
 
-#### Treine: um modelo de regressão logística, uma árvore de decisão e um modelo de adaboost. Tune esses modelos usando validação cruzada e controle overfitting se necessário, considerando as particularidades de cada modelo.  (20 pts.)
+Inicialmente, analizarei os dados do atributo "situação" para verificar a distribuição dos dados. 
+```{r}
+summary(dados$situacao)
+```
+O resultado acima corresponde a quantidade de deputados eleitos (1026) e não eleitos (6596) nesse conjunto de dados. Só com esses valores podemos afirmar que os dados não estão devidamente balanceados para as duas classificações possíveis. A proporção de candidatos eleitos é de aproximadamente 13%, enquanto a de não eleitos é de 83%. O problema disso é que os modelos gerados com esses dados terão um aprendizado tendendo mais para a classe que tiver maior percentual e, nesse caso, acabará eliminando alguns candidados que seriam classificados como "eleito", gerando o que é chamada de erro do tipo 1.
+#### Treinamento de modeloslo de regressão logística, uma árvore de decisão e um modelo de adaboost. Tune esses modelos usando validação cruzada e controle overfitting se necessário, considerando as particularidades de cada modelo.  (20 pts.)
+Para treinar os modelos de regressão logística, árvore de decisão e adaboost, utilizarei o pacote "caret". Utilizarei o mesmo conjunto de dados para os três modelo, tunando apenas os parâmetros que são esperados na entrada do método de treino do caret.
+
+##### Regressão Logística
+
+Para a regressão logística é esperado um parâmetro 
+```{r regressaoLogistica}
+cctrl1 <- train(method = "cv", number = 3,
+                       summaryFunction = twoClassSummary,
+                       search = "random", verboseIter = TRUE)
+rlGrid <- expand.grid( cost = c(200,2,0.02),
+                       epsilon = c(0.001,0.01) )
+
+test_class_cv_form <- train(situacao ~ ., data = dados %>% select(-cargo), 
+                            method = "regLogistic", 
+                            trControl = cctrl1,
+                            preProc = c("center", "scale"))
+
+```
+
+##### Árvore de Decisão
+```{r id3}
+  
+```
+
+##### AdaBoost
+```{r adaboost}
+  
+```
 
 #### Reporte acurácia, precision, recall e f-measure no treino e validação. Há uma grande diferença de desempenho no treino/validação? Como você avalia os resultados? Justifique sua resposta. (10 pt.)
 
