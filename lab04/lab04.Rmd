@@ -12,23 +12,20 @@ output:
       toc_float: yes
 ---
 
+# Predição de Classificação de Deputados
+
 ```{r include=FALSE}
 library(caret)
 library(tidyverse)
+library(data.table)
 ```
 
 ```{r importarDados}
-dados <- read.csv("train.csv")
+dados <- read.csv("train.csv") %>% 
+  select(-recursos_de_outros_candidatos.comites, -sequencial_candidato, -nome, -cargo, -ocupacao) 
 
-validacaoCruzada <- trainControl(method = "cv", number = 5, )
-
-logisticModel <- train(
-  situacao~ .,
-  data = dados %>% select(-cargo),
-  method = "regLogistic",
-  trControl = validacaoCruzada)
+testes <- read.csv("test.csv")
 ```
-### Questões
 Nessa atividade você irá usar seus conhecimentos sobre classificação para prever quais candidatos à Câmara de Deputados serão eleitos nas eleições de 2014. De forma específica faremos o seguinte:
 
 #### Há desbalanceamento das classes (isto é, uma classe tem muito mais instâncias que outra)? Em que proporção? Quais efeitos colaterais o desbalanceamento de classes pode causar no classificador? Como você poderia tratar isso?
@@ -37,43 +34,136 @@ Inicialmente, analizarei os dados do atributo "situação" para verificar a dist
 ```{r}
 summary(dados$situacao)
 ```
-O resultado acima corresponde a quantidade de deputados eleitos (1026) e não eleitos (6596) nesse conjunto de dados. Só com esses valores podemos afirmar que os dados não estão devidamente balanceados para as duas classificações possíveis. A proporção de candidatos eleitos é de aproximadamente 13%, enquanto a de não eleitos é de 83%. O problema disso é que os modelos gerados com esses dados terão um aprendizado tendendo mais para a classe que tiver maior percentual e, nesse caso, acabará eliminando alguns candidados que seriam classificados como "eleito", gerando o que é chamada de erro do tipo 1.
-#### Treinamento de modeloslo de regressão logística, uma árvore de decisão e um modelo de adaboost. Tune esses modelos usando validação cruzada e controle overfitting se necessário, considerando as particularidades de cada modelo.  (20 pts.)
-Para treinar os modelos de regressão logística, árvore de decisão e adaboost, utilizarei o pacote "caret". Utilizarei o mesmo conjunto de dados para os três modelo, tunando apenas os parâmetros que são esperados na entrada do método de treino do caret.
+O resultado acima corresponde a quantidade de deputados eleitos (1026) e não eleitos (6596) nesse conjunto de dados. Só com esses valores podemos afirmar que os dados não estão devidamente balanceados para as duas classificações possíveis. A proporção de candidatos eleitos é de aproximadamente 13%, enquanto a de não eleitos é de 83%. O problema disso é que os modelos gerados com esses dados terão um aprendizado tendendo mais para a classe que tiver maior percentual e, nesse caso, acabará eliminando alguns candidados que seriam classificados como "eleito", gerando o que é chamada de erro do tipo 1. Existem algumas abordagens que podem ser aplicadas em casos de desbalanceamento, dentre elas o downsampling e o upsampling são os mais conhecidos, sendo a redução de amostra da classe majoritária e o incremento de amostras fictícias da classe minoritária, respectivamente. Além desses, o pacote caret tem outros métodos híbridos (ROSE e SMOTE) que serão utilizados nos modelos a seguir. Por fim, dividirei o conjunto de dados em treino e validação para as questões a seguir:
+
+```{r}
+treinoDado <-
+  dados %>% 
+  sample_frac(0.8)
+
+validacaoDado <- dados[-(as.numeric(rownames(treinoDado))),]
+
+```
+ 
+#### Treine: um modelo de KNN, regressão logística, uma árvore de decisão e um modelo de adaboost. Tune esses modelos usando validação cruzada e controle overfitting se necessário, considerando as particularidades de cada modelo.
+Para treinar os modelos de regressão logística, árvore de decisão e adaboost, utilizarei o pacote "caret". Utilizarei o mesmo conjunto de dados para os três modelo a seguir:
+
+##### KNN
+```{r knnModel}
+cctrl1 <- trainControl(method = "cv", number = 3, sampling = "smote")
+knnModel <- train(situacao ~ .,
+                     data = treinoDado,
+                     method = "knn",
+                     trControl = cctrl1,
+                     preProcess = c("center","scale"))
+knnModel
+```
 
 ##### Regressão Logística
 
-Para a regressão logística é esperado um parâmetro 
 ```{r regressaoLogistica}
-cctrl1 <- train(method = "cv", number = 3,
-                       summaryFunction = twoClassSummary,
-                       search = "random", verboseIter = TRUE)
-rlGrid <- expand.grid( cost = c(200,2,0.02),
-                       epsilon = c(0.001,0.01) )
-
-test_class_cv_form <- train(situacao ~ ., data = dados %>% select(-cargo), 
-                            method = "regLogistic", 
-                            trControl = cctrl1,
-                            preProc = c("center", "scale"))
-
+regLogisticModel <- train(situacao ~ ., 
+                          data = treinoDado , 
+                          method = "regLogistic", 
+                          preProc = c("center", "scale"),
+                          trControl = cctrl1)
+regLogisticModel
 ```
 
 ##### Árvore de Decisão
 ```{r id3}
-  
+id3Model <- train(situacao ~ ., 
+                  data = treinoDado, 
+                  method = "rpart",
+                  preProc = c("center", "scale"),
+                  trControl = cctrl1)
+id3Model
 ```
 
 ##### AdaBoost
 ```{r adaboost}
-  
+adaboostModel <- train(situacao ~ ., 
+                      data = treinoDado , 
+                      method = "adaboost", 
+                      tuneLength = 1,
+                      trControl = cctrl1,
+                      preProc = c("center", "scale"))
+adaboostModel
 ```
 
-#### Reporte acurácia, precision, recall e f-measure no treino e validação. Há uma grande diferença de desempenho no treino/validação? Como você avalia os resultados? Justifique sua resposta. (10 pt.)
+#### Reporte acurácia, precision, recall e f-measure no treino e validação. Há uma grande diferença de desempenho no treino/validação? Como você avalia os resultados? Justifique sua resposta. 
 
-#### Interprete as saídas dos modelos. Quais atributos parecem ser mais importantes de acordo com cada modelo? Crie pelo menos um novo atributo que não está nos dados originais e estude o impacto desse atributo (20 pts.)
+Para gerar as estatísticas apontadas acima, realizarei a predição com os modelos gerados na etapa anterior para os dados de validação separados previamente:
+
+##### Predição
+
+```{r}
+knnPredic <- predict(knnModel, validacaoDado)
+regLogisticPredic <- predict(regLogisticModel, validacaoDado)
+adaboostPredic <- predict(adaboostModel, validacaoDado)
+id3Predic <- predict(id3Model, validacaoDado)
+```
+Com os valores preditos, poderei calcular as estatísticas tendo base os valores de treino apresentados. O caret contém uma função que gera uma matriz com as principais estatísticas que precisaremos, dentre elas o precision, recall, F-measure e a accuracy. Utilizarei a função para cada modelo a seguir:
+
+##### KNN
+```{r}
+confusionMatrix(data = knnPredic, reference = validacaoDado$situacao, mode = "prec_recall")
+```
+
+##### Regressão Logística 
+```{r}
+confusionMatrix(data = regLogisticPredic, reference = validacaoDado$situacao, mode = "prec_recall")
+```
+
+##### Árvore de Decisão
+```{r }
+confusionMatrix(data = id3Predic, reference = validacaoDado$situacao, mode = "prec_recall")
+```
+
+##### AdaBoost
+```{r }
+confusionMatrix(data = adaboostPredic, reference = validacaoDado$situacao, mode = "prec_recall")
+```
+
+##### Analisando resultados
+
+É possível ver que o modelo AdaBoost apresenta a maior acurácia entre os modelos treinados. Em termos de revocação, esse modelo também tem lugar de destaque entre os modelos com sua alta pontuação, indicando que grande parte dos elementos relevantes (eleito) foram selecionados corretamente. Além disso, ele também contém o melhor valor de precisão. A precisão está diretamente ligada ao fato dos elementos que foram selecionados serem relevantes (eleito). Por fim, ainda existe o valor da F-measure que representa uma medida estatística que combina a precisão e a revocação como medida de qualidade de um modelo. Mais uma vez o AdaBoost tem os melhores valores para os modelos treinados.
+
+
+#### Interprete as saídas dos modelos. Quais atributos parecem ser mais importantes de acordo com cada modelo? 
+##### KNN
+
+```{r}
+varImp(knnModel)
+```
+No KNN o total da despesa e da receita tem as maiores importâncias do modelo.
+
+##### Regressão Logística
+
+```{r}
+varImp(regLogisticModel)
+```
+Na regressão logística o total da despesa e da receita tem as maiores importâncias do modelo.
+
+##### Árvore de Decisão
+```{r }
+varImp(id3Model)
+```
+Já no modelo de árvore de decisão, o total da receita e o total das despesas ficam em primeiro lugar.
+
+##### AdaBoost
+```{r}
+varImp(adaboostModel)
+```
+Por fim, o modelo AdaBoost tem total de despesa e total de receita como variáveis mais importantes.
 
 #### Envie seus melhores modelos à competição do Kaggle. Faça pelo menos uma submissão. Sugestões para melhorar o modelo: (20 pts.)
-
-##### Experimente outros modelos (e.g. SVM, RandomForests e GradientBoosting).
-##### Experimente balancear as classes,  caso estejam desbalanceadas.
-##### Crie pelo menos um novo atributo.
+```{r}
+Predicted <- predict(adaboostModel, testes)
+resposta <-
+  testes %>% 
+  cbind(Predicted) %>% 
+  mutate(Id = as.character(sequencial_candidato)) %>% 
+  select(Id, Predicted)
+write_csv(path = "kagleResposta.csv", x = resposta)
+```

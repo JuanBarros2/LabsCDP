@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/446591/79e26abf44ed409ca5350c859bc17701
+bundleId: https://api.rpubs.com/api/v1/document/446591/79e26abf44ed409ca5350c859bc17701
+url: http://rpubs.com/JuanBarros/446591
+when: 1544051571.38889
